@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
 )
 
@@ -15,6 +18,8 @@ func main() {
 	e.GET("/hello", HelloHandler)
 	e.POST("/echo", EchoHandler)
 	e.GET("/headers", HeadersHandler)
+	e.GET("/db/ping", DBHandler)
+	e.GET("/env", EnvHandler)
 
 	e.GET("/livez", HelloHandler)
 	e.GET("/readyz", HelloHandler)
@@ -51,6 +56,35 @@ func HeadersHandler(ctx echo.Context) error {
 	resp["headers"] = headers
 	resp["requestUri"] = ctx.Request().RequestURI
 	resp["remoteAddress"] = ctx.Request().RemoteAddr
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+func DBHandler(ctx echo.Context) error {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+	defer conn.Close(context.Background())
+	if err = conn.Ping(context.Background()); err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.String(http.StatusOK, "OK")
+}
+
+func EnvHandler(ctx echo.Context) error {
+	resp := make(map[string]interface{})
+
+	for _, env := range os.Environ() {
+		split := strings.Split(env, "=")
+		if len(split) < 2 {
+			continue
+		}
+		key := split[0]
+		value := os.Getenv(key)
+		resp[key] = value
+	}
 
 	return ctx.JSON(http.StatusOK, resp)
 }
