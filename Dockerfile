@@ -14,8 +14,7 @@ COPY . .
 
 # Using go mod.
 # Using go get.
-# ./... is needed because the main package is not in the root
-RUN go get -d -v ./... \
+RUN go get -d -v . \
     && go mod download \
     && go mod verify
 
