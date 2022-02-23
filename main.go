@@ -31,7 +31,11 @@ func main() {
 }
 
 func HelloHandler(ctx echo.Context) error {
-	return ctx.String(http.StatusOK, "Hello, world!")
+    text := os.Getenv("HELLO_TEXT")
+    if text == "" {
+      text = "Hello, world!"
+    }
+	return ctx.String(http.StatusOK, text)
 }
 
 func EchoHandler(ctx echo.Context) error {
